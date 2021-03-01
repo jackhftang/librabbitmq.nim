@@ -9,6 +9,36 @@ else:
   const
     librabbitmq* = "librabbitmq.so"
 
+const AMQP_PROTOCOL_VERSION_MAJOR* = 0 
+const AMQP_PROTOCOL_VERSION_MINOR* = 9  
+const AMQP_PROTOCOL_VERSION_REVISION* = 1
+const AMQP_PROTOCOL_PORT* = 5672
+const AMQP_FRAME_METHOD* = 1
+const AMQP_FRAME_HEADER* = 2
+const AMQP_FRAME_BODY* = 3
+const AMQP_FRAME_HEARTBEAT* = 8
+const AMQP_FRAME_MIN_SIZE* = 4096
+const AMQP_FRAME_END* = 206
+const AMQP_REPLY_SUCCESS* = 200
+const AMQP_CONTENT_TOO_LARGE* = 311
+const AMQP_NO_ROUTE* = 312
+const AMQP_NO_CONSUMERS* = 313
+const AMQP_ACCESS_REFUSED* = 403
+const AMQP_NOT_FOUND* = 404
+const AMQP_RESOURCE_LOCKED* = 405
+const AMQP_PRECONDITION_FAILED* = 406
+const AMQP_CONNECTION_FORCED* = 320
+const AMQP_INVALID_PATH* = 402
+const AMQP_FRAME_ERROR* = 501
+const AMQP_SYNTAX_ERROR* = 502
+const AMQP_COMMAND_INVALID* = 503
+const AMQP_CHANNEL_ERROR* = 504
+const AMQP_UNEXPECTED_FRAME* = 505
+const AMQP_RESOURCE_ERROR* = 506
+const AMQP_NOT_ALLOWED* = 530
+const AMQP_NOT_IMPLEMENTED* = 540
+const AMQP_INTERNAL_ERROR* = 541
+
 type
   ssize_t* = clong
   int8_t* = cchar
@@ -41,10 +71,10 @@ type
   uintmax_t* = culong
   timeval* {.bycopy.} = object
 
-
 proc amqp_version_number*(): uint32_t {.cdecl, importc: "amqp_version_number",
                                      dynlib: librabbitmq.}
 proc amqp_version*(): cstring {.cdecl, importc: "amqp_version", dynlib: librabbitmq.}
+
 type
   INNER_C_UNION_amqp_126* {.bycopy.} = object {.union.}
     boolean*: amqp_boolean_t
@@ -166,6 +196,13 @@ type
   amqp_time_t* {.bycopy.} = object
     time_point_ns*: uint64_t
 
+  amqp_socket_flag_enum* {.size: sizeof(cint).} = enum
+    AMQP_SF_NONE = 0, AMQP_SF_MORE = 1, AMQP_SF_POLLIN = 2, AMQP_SF_POLLOUT = 4,
+    AMQP_SF_POLLERR = 8
+
+  amqp_socket_close_enum* {.size: sizeof(cint).} = enum
+    AMQP_SC_NONE = 0, AMQP_SC_FORCE = 1
+
   amqp_connection_state_enum* {.size: sizeof(cint).} = enum
     CONNECTION_STATE_IDLE = 0, CONNECTION_STATE_INITIAL, CONNECTION_STATE_HEADER,
     CONNECTION_STATE_BODY
@@ -213,7 +250,25 @@ type
 
   amqp_connection_state_t* = ptr amqp_connection_state_t_object
 
-  amqp_socket_t* = object
+  amqp_socket_send_fn* = proc (a1: pointer; a2: pointer; a3: csize_t; a4: cint): ssize_t {.
+      cdecl.}
+  amqp_socket_recv_fn* = proc (a1: pointer; a2: pointer; a3: csize_t; a4: cint): ssize_t {.
+      cdecl.}
+  amqp_socket_open_fn* = proc (a1: pointer; a2: cstring; a3: cint; a4: ptr timeval): cint {.
+      cdecl.}
+  amqp_socket_close_fn* = proc (a1: pointer; a2: amqp_socket_close_enum): cint {.cdecl.}
+  amqp_socket_get_sockfd_fn* = proc (a1: pointer): cint {.cdecl.}
+  amqp_socket_delete_fn* = proc (a1: pointer) {.cdecl.}
+  amqp_socket_class_t* {.bycopy.} = object
+    send*: amqp_socket_send_fn
+    recv*: amqp_socket_recv_fn
+    open*: amqp_socket_open_fn
+    close*: amqp_socket_close_fn
+    get_sockfd*: amqp_socket_get_sockfd_fn
+    delete*: amqp_socket_delete_fn
+
+  amqp_socket_t* {.bycopy.} = object
+    klass*: ptr amqp_socket_class_t
   
   amqp_status_enum* {.size: sizeof(cint).} = enum
     AMQP_STATUS_SSL_NEXT_VALUE = -0x00000205,
@@ -247,13 +302,9 @@ type
     AMQP_STATUS_BAD_AMQP_DATA = -0x00000002, 
     AMQP_STATUS_NO_MEMORY = -0x00000001,
     AMQP_STATUS_OK = 0x00000000
+
   amqp_delivery_mode_enum* {.size: sizeof(cint).} = enum
     AMQP_DELIVERY_NONPERSISTENT = 1, AMQP_DELIVERY_PERSISTENT = 2
-
-
-
-
-
 
 proc amqp_constant_name*(constantNumber: cint): cstring {.cdecl,
     importc: "amqp_constant_name", dynlib: librabbitmq.}
@@ -275,6 +326,7 @@ proc amqp_encode_method*(methodNumber: amqp_method_number_t; decoded: pointer;
 proc amqp_encode_properties*(class_id: uint16_t; decoded: pointer;
                             encoded: amqp_bytes_t): cint {.cdecl,
     importc: "amqp_encode_properties", dynlib: librabbitmq.}
+
 type
   amqp_connection_start_t* {.bycopy.} = object
     version_major*: uint8_t
@@ -612,7 +664,6 @@ type
   amqp_confirm_properties_t* {.bycopy.} = object
     flags*: amqp_flags_t
     dummy*: char
-
 
 proc amqp_channel_open*(state: amqp_connection_state_t; channel: amqp_channel_t): ptr amqp_channel_open_ok_t {.
     cdecl, importc: "amqp_channel_open", dynlib: librabbitmq.}
@@ -1093,41 +1144,12 @@ proc amqp_send_frame_inner*(state: amqp_connection_state_t;
                            frame: ptr amqp_frame_t; flags: cint;
                            deadline: amqp_time_t): cint {.cdecl,
     importc: "amqp_send_frame_inner", dynlib: librabbitmq.}
-type
-  amqp_socket_flag_enum* {.size: sizeof(cint).} = enum
-    AMQP_SF_NONE = 0, AMQP_SF_MORE = 1, AMQP_SF_POLLIN = 2, AMQP_SF_POLLOUT = 4,
-    AMQP_SF_POLLERR = 8
-  amqp_socket_close_enum* {.size: sizeof(cint).} = enum
-    AMQP_SC_NONE = 0, AMQP_SC_FORCE = 1
-
-
 
 proc amqp_os_socket_error*(): cint {.cdecl, importc: "amqp_os_socket_error",
                                   dynlib: librabbitmq.}
 proc amqp_os_socket_close*(sockfd: cint): cint {.cdecl,
     importc: "amqp_os_socket_close", dynlib: librabbitmq.}
-type
-  amqp_socket_send_fn* = proc (a1: pointer; a2: pointer; a3: csize_t; a4: cint): ssize_t {.
-      cdecl.}
-  amqp_socket_recv_fn* = proc (a1: pointer; a2: pointer; a3: csize_t; a4: cint): ssize_t {.
-      cdecl.}
-  amqp_socket_open_fn* = proc (a1: pointer; a2: cstring; a3: cint; a4: ptr timeval): cint {.
-      cdecl.}
-  amqp_socket_close_fn* = proc (a1: pointer; a2: amqp_socket_close_enum): cint {.cdecl.}
-  amqp_socket_get_sockfd_fn* = proc (a1: pointer): cint {.cdecl.}
-  amqp_socket_delete_fn* = proc (a1: pointer) {.cdecl.}
-  amqp_socket_class_t* {.bycopy.} = object
-    send*: amqp_socket_send_fn
-    recv*: amqp_socket_recv_fn
-    open*: amqp_socket_open_fn
-    close*: amqp_socket_close_fn
-    get_sockfd*: amqp_socket_get_sockfd_fn
-    delete*: amqp_socket_delete_fn
-
-  # amqp_socket_t_* {.bycopy.} = object
-  #   klass*: ptr amqp_socket_class_t
-
-
+  
 proc amqp_set_socket*(state: amqp_connection_state_t; socket: ptr amqp_socket_t) {.
     cdecl, importc: "amqp_set_socket", dynlib: librabbitmq.}
 proc amqp_socket_send*(self: ptr amqp_socket_t; buf: pointer; len: csize_t; flags: cint): ssize_t {.
