@@ -1,19 +1,19 @@
 import librabbitmq
 
+type
+  LibrabbitmqError* = object of CatchableError
+
 proc check*(rep: amqp_rpc_reply_t) =
   case rep.reply_type:
   of AMQP_RESPONSE_NORMAL: 
     return
   of AMQP_RESPONSE_NONE:
-    stderr.writeLine("Missing RPC reply type")
-    quit 1
+    raise newException(LibrabbitmqError, "Missing RPC reply type")
   of AMQP_RESPONSE_LIBRARY_EXCEPTION:
     let s = amqp_error_string2(rep.library_error)
-    stderr.writeLine(s)
-    quit 1
+    raise newException(LibrabbitmqError, $s)
   of AMQP_RESPONSE_SERVER_EXCEPTION:
-    stderr.writeLine("server error")
-    quit 1
+    raise newException(LibrabbitmqError, "server error method_id=" & $rep.reply.id)
 
 proc check*(x: cint) =
   if x < 0:
