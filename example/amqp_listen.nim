@@ -60,7 +60,7 @@ proc main() =
     let exchange = $envelope.exchange
     let routingKey = $envelope.routing_key
     echo "delieveryTag=", deliveryTag, " exchange=", exchange, " routingKey=", routingKey
-    # echo envelope.message.body
+    echo envelope.message.body
     amqp_destroy_envelope(envelope.addr)
   
   # close channel

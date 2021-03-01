@@ -1,8 +1,5 @@
 import librabbitmq
 
-type
-  LibrabbitmqError* = object of CatchableError
-
 proc check*(rep: amqp_rpc_reply_t) =
   case rep.reply_type:
   of AMQP_RESPONSE_NORMAL: 

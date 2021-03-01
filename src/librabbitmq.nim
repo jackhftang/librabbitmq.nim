@@ -40,6 +40,10 @@ const AMQP_NOT_IMPLEMENTED* = 540
 const AMQP_INTERNAL_ERROR* = 541
 
 type
+  # useful sometimes and no harm 
+  LibrabbitmqError* = object of CatchableError
+
+type
   ssize_t* = clong
   int8_t* = cchar
   int16_t* = cshort
