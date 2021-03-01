@@ -1,26 +1,5 @@
 import librabbitmq
-
-proc check(rep: amqp_rpc_reply_t) =
-  case rep.reply_type:
-  of AMQP_RESPONSE_NORMAL: return
-  of AMQP_RESPONSE_NONE:
-    stderr.writeLine("Missing RPC reply type")
-    return
-  of AMQP_RESPONSE_LIBRARY_EXCEPTION:
-    let s = amqp_error_string2(rep.library_error)
-    stderr.writeLine(s)
-    return
-  of AMQP_RESPONSE_SERVER_EXCEPTION:
-    stderr.writeLine("server error")
-    return
-
-proc read(length: csize_t, bytes: pointer): string =
-  for i in 0 ..< length:
-    let b = cast[ptr char](cast[ByteAddress](bytes) +% i.int)
-    result &= b[]
-
-proc `$`(b: amqp_bytes_t): string =
-  read(b.len, b.bytes)
+import utils
 
 proc main() =
   let conn = amqp_new_connection()
@@ -67,6 +46,11 @@ proc main() =
     echo "delieveryTag=", deliveryTag, " exchange=", exchange, " routingKey=", routingKey
     # echo envelope.message.body
     amqp_destroy_envelope(envelope.addr)
+
+  amqp_bytes_free(queueName)
+  check conn.amqp_channel_close(1, AMQP_REPLY_SUCCESS)
+  check conn.amqp_connection_close(AMQP_REPLY_SUCCESS)
+  check conn.amqp_destroy_connection()
 
 when isMainModule:
   main()
