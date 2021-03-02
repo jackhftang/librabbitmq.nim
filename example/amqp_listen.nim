@@ -1,7 +1,12 @@
 import librabbitmq
 import utils
 
-proc main() =
+proc amqp_listen(
+  username="guest", 
+  password="guest",
+  exchange="amq.direct",
+  routingKey="test queue"
+) =
   # init connection
   let conn = amqp_new_connection()
   if conn.isNil:
@@ -18,29 +23,27 @@ proc main() =
     raise newException(ValueError, "cannot open TCP socket")
 
   # login
-  check conn.amqp_login("/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, "guest", "guest")
+  check conn.amqp_login("/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, username, password)
 
   # open channel 1
   discard conn.amqp_channel_open(1)
   check conn.amqp_get_rpc_reply()
 
-  # find queue name
+  # create or reuse queue
   let r = conn.amqp_queue_declare(1, amqp_empty_bytes, 0, 0, 0, 1, amqp_empty_table)
   echo "queue=", r.queue
 
   # bind queue
-  let exchange = "amq.direct"
-  let bindingKey = "test queue"
   discard conn.amqp_queue_bind(
     1, 
     r.queue, 
     amqp_cstring_bytes(exchange), 
-    amqp_cstring_bytes(bindingKey), 
+    amqp_cstring_bytes(routingKey), 
     amqp_empty_table
   )
   check conn.amqp_get_rpc_reply()
 
-
+  # start consumption
   discard conn.amqp_basic_consume(
     1, 
     r.queue, 
@@ -73,4 +76,5 @@ proc main() =
   check conn.amqp_destroy_connection()
 
 when isMainModule:
-  main()
+  import cligen
+  dispatch(amqp_listen)

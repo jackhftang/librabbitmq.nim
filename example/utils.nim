@@ -10,7 +10,7 @@ proc check*(rep: amqp_rpc_reply_t) =
     let s = amqp_error_string2(rep.library_error)
     raise newException(LibrabbitmqError, $s)
   of AMQP_RESPONSE_SERVER_EXCEPTION:
-    raise newException(LibrabbitmqError, "server error method_id=" & $rep.reply.id)
+    raise newException(LibrabbitmqError, "server error " & $rep.reply.id)
 
 proc check*(x: cint) =
   if x < 0:
