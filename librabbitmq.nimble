@@ -2,7 +2,7 @@
 
 version       = "0.1.0"
 author        = "Jack Tang"
-description   = "A new awesome nimble package"
+description   = "Nim wrapper of librabbitmq"
 license       = "MIT"
 srcDir        = "src"
 
