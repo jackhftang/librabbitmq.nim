@@ -26,7 +26,15 @@ proc main(
     raise newException(ValueError, "cannot open TCP socket")
 
   # login 
-  check conn.amqp_login("/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, username, password)
+  check conn.amqp_login(
+    AMQP_DEFAULT_VHOST,
+    AMQP_DEFAULT_MAX_CHANNELS,
+    AMQP_DEFAULT_FRAME_SIZE,
+    AMQP_DEFAULT_HEARTBEAT, 
+    AMQP_SASL_METHOD_PLAIN, 
+    username, 
+    password
+  )
 
   # open channel 1
   discard conn.amqp_channel_open(1)

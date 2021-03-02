@@ -9,6 +9,10 @@ else:
   const
     librabbitmq* = "librabbitmq.so"
 
+const AMQP_DEFAULT_VHOST* = "/"
+const AMQP_DEFAULT_MAX_CHANNELS* = 2047
+const AMQP_DEFAULT_FRAME_SIZE* = 131072
+const AMQP_DEFAULT_HEARTBEAT* = 0
 const AMQP_PROTOCOL_VERSION_MAJOR* = 0 
 const AMQP_PROTOCOL_VERSION_MINOR* = 9  
 const AMQP_PROTOCOL_VERSION_REVISION* = 1

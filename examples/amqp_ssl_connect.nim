@@ -26,7 +26,15 @@ proc amqp_ssl_connect(
   check socket.amqp_socket_open_noblock(host, port.cint, tv.addr)
 
   # login
-  check conn.amqp_login("/", 0, 131072, 0, AMQP_SASL_METHOD_PLAIN, username, password)
+  check conn.amqp_login(
+    AMQP_DEFAULT_VHOST,
+    AMQP_DEFAULT_MAX_CHANNELS,
+    AMQP_DEFAULT_FRAME_SIZE,
+    AMQP_DEFAULT_HEARTBEAT, 
+    AMQP_SASL_METHOD_PLAIN, 
+    username, 
+    password
+  )
 
   # close connection
   check conn.amqp_connection_close(AMQP_REPLY_SUCCESS)
