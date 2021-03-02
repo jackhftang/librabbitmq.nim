@@ -74,6 +74,8 @@ type
   intmax_t* = clong
   uintmax_t* = culong
   timeval* {.bycopy.} = object
+    tv_sec*: culong
+    tv_usec*: culong
 
 proc amqp_version_number*(): uint32_t {.cdecl, importc: "amqp_version_number",
                                      dynlib: librabbitmq.}
@@ -1193,3 +1195,43 @@ proc sasl_mechanism_in_list*(mechanisms: amqp_bytes_t;
 proc amqp_merge_capabilities*(base: ptr amqp_table_t; add: ptr amqp_table_t;
                              result: ptr amqp_table_t; pool: ptr amqp_pool_t): cint {.
     cdecl, importc: "amqp_merge_capabilities", dynlib: librabbitmq.}
+proc amqp_ssl_socket_new*(state: amqp_connection_state_t): ptr amqp_socket_t {.cdecl,
+    importc: "amqp_ssl_socket_new", dynlib: librabbitmq.}
+proc amqp_ssl_socket_get_context*(self: ptr amqp_socket_t): pointer {.cdecl,
+    importc: "amqp_ssl_socket_get_context", dynlib: librabbitmq.}
+proc amqp_ssl_socket_set_cacert*(self: ptr amqp_socket_t; cacert: cstring): cint {.
+    cdecl, importc: "amqp_ssl_socket_set_cacert", dynlib: librabbitmq.}
+proc amqp_ssl_socket_set_key*(self: ptr amqp_socket_t; cert: cstring; key: cstring): cint {.
+    cdecl, importc: "amqp_ssl_socket_set_key", dynlib: librabbitmq.}
+proc amqp_ssl_socket_set_key_engine*(self: ptr amqp_socket_t; cert: cstring;
+                                    key: cstring): cint {.cdecl,
+    importc: "amqp_ssl_socket_set_key_engine", dynlib: librabbitmq.}
+proc amqp_ssl_socket_set_key_buffer*(self: ptr amqp_socket_t; cert: cstring;
+                                    key: pointer; n: csize_t): cint {.cdecl,
+    importc: "amqp_ssl_socket_set_key_buffer", dynlib: librabbitmq.}
+proc amqp_ssl_socket_set_verify*(self: ptr amqp_socket_t; verify: amqp_boolean_t) {.
+    cdecl, importc: "amqp_ssl_socket_set_verify", dynlib: librabbitmq.}
+proc amqp_ssl_socket_set_verify_peer*(self: ptr amqp_socket_t;
+                                     verify: amqp_boolean_t) {.cdecl,
+    importc: "amqp_ssl_socket_set_verify_peer", dynlib: librabbitmq.}
+proc amqp_ssl_socket_set_verify_hostname*(self: ptr amqp_socket_t;
+    verify: amqp_boolean_t) {.cdecl,
+                            importc: "amqp_ssl_socket_set_verify_hostname",
+                            dynlib: librabbitmq.}
+type
+  amqp_tls_version_t* {.size: sizeof(cint).} = enum
+    AMQP_TLSv1 = 1, AMQP_TLSv1_1 = 2, AMQP_TLSv1_2 = 3, AMQP_TLSvLATEST = 0x0000FFFF
+
+
+proc amqp_ssl_socket_set_ssl_versions*(self: ptr amqp_socket_t;
+                                      min: amqp_tls_version_t;
+                                      max: amqp_tls_version_t): cint {.cdecl,
+    importc: "amqp_ssl_socket_set_ssl_versions", dynlib: librabbitmq.}
+proc amqp_set_initialize_ssl_library*(do_initialize: amqp_boolean_t) {.cdecl,
+    importc: "amqp_set_initialize_ssl_library", dynlib: librabbitmq.}
+proc amqp_initialize_ssl_library*(): cint {.cdecl,
+    importc: "amqp_initialize_ssl_library", dynlib: librabbitmq.}
+proc amqp_set_ssl_engine*(engine: cstring): cint {.cdecl,
+    importc: "amqp_set_ssl_engine", dynlib: librabbitmq.}
+proc amqp_uninitialize_ssl_library*(): cint {.cdecl,
+    importc: "amqp_uninitialize_ssl_library", dynlib: librabbitmq.}

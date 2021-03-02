@@ -2,6 +2,8 @@ import librabbitmq
 import utils
 
 proc main(
+  host="127.0.0.1",
+  port=5672,
   username="guest",
   password="guest",
   exchange="amq.direct",
@@ -19,7 +21,7 @@ proc main(
     raise newException(ValueError, "cannot create a TCP socket")
 
   # open TCP 
-  let status = socket.amqp_socket_open("127.0.0.1", 5672)
+  let status = socket.amqp_socket_open(host, port.cint)
   if status != 0:
     raise newException(ValueError, "cannot open TCP socket")
 
